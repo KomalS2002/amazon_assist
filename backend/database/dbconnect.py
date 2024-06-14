@@ -3,8 +3,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
-load_dotenv('.env')
+dotenv_path = Path('/home/avengers/amazon_assist/backend/.env')
+load_dotenv(dotenv_path=dotenv_path)
 
 DB_USERNAME:str = os.getenv('DB_USERNAME')
 DB_PASSWORD:str = os.getenv('DB_PASSWORD')
