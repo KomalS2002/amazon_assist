@@ -61,7 +61,7 @@ async def textToDesc(request : textDescModel):
     }
     """
     if (request.text):
-        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
+        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy)"
         prompt = set_lang_english+request.text+ntpi
         print(prompt)
         response = client.chat.completions.create(
