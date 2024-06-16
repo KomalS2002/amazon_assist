@@ -1,67 +1,48 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 import './SignUp.css';
 
-const SignUp = () => {
-  const [form, setForm] = useState({
-    username: '',
-    email: '',
-    password: ''
-  });
-
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+const SignUp=()=>{
+  const onSuccess = (credentialResponse) => {
+    const idToken = credentialResponse.credential;
+    console.log('Google ID Token:', idToken);
+    
+    const payload = {
+      email: 'string',
+      password: 'string',
+      idToken: idToken,
+      name: 'string'
+    };
+    console.log(payload);
+    // Send the payload to the backend
+    axios.post('http://127.0.0.1:8000/auth', payload)
+      .then((res) => {
+        console.log('Backend response:', res.data);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.error('Response error:', error.response.data);
+        } else if (error.request) {
+          console.error('Request error:', error.request);
+        } else {
+          console.error('Error', error.message);
+        }
+        console.error('Error config:', error.config);
+      });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', form);
-    // Add form submission logic here
-  };
 
   return (
-    <div className="signup-container">
-      <h2>Sign Up</h2>
-      <form onSubmit={handleSubmit} className="signup-form">
-        <div className="form-group">
-          <label htmlFor="username">Username:</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Password:</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" className="signup-button">Sign Up</button>
-      </form>
+    <div className='.signup-container'>
+     <GoogleLogin
+     onSuccess={onSuccess}
+    onError={() => {
+    console.log('Login Failed');
+  }}
+/>;
     </div>
-  );
-};
+  )
+}
 
 export default SignUp;
