@@ -6,3 +6,5 @@ backend/venv
 backend/venv/
 .env
 backend/.env
+env
+backend/env
