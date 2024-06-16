@@ -25,13 +25,11 @@ def gLogin(authRequestDTO: AuthRequestDTO, db: Session):
         if authRequestDTO.idToken == None:
             raise "InvalidIdTokenException"
         request = requests.Request()
-        print(authRequestDTO.idToken)
         id_info = id_token.verify_oauth2_token(
             authRequestDTO.idToken, request, GOOGLE_CLIENT_ID
         )
         email = id_info["email"]
         name = id_info["name"]
-        print(email)
         user = db.query(Users).filter(Users.email == email).first()
         if user is None:
             user = Users(
