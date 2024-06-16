@@ -3,18 +3,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from database.dbconnect import Base
 from alembic import context
-from dotenv import load_dotenv
-import os
-from pathlib import Path
+from database.config import DB_HOST,DB_NAME,DB_PASSWORD,DB_USERNAME
 
-dotenv_path = Path('/home/avengers/amazon_assist/backend/.env')
-load_dotenv(dotenv_path=dotenv_path)
-
-DB_USERNAME = os.getenv('DB_USERNAME')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST= os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_NAME')
-print(DB_NAME)
 config = context.config
 config.set_main_option(
     "sqlalchemy.url",

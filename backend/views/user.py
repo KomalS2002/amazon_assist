@@ -10,15 +10,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from models.user import Users
 import jwt
-from dotenv import load_dotenv
-import os
-from pathlib import Path
+from database.config import JWT_SECRET,GOOGLE_CLIENT_ID
 
-dotenv_path = Path('/home/avengers/amazon_assist/backend/.env')
-load_dotenv(dotenv_path=dotenv_path)
-
-JWT_SECRET:str = os.getenv('JWT_SECRET')
-GOOGLE_CLIENT_ID:str = os.getenv('GOOGLE_CLIENT_ID')
 
 def gLogin(authRequestDTO: AuthRequestDTO, db: Session):
     try:
