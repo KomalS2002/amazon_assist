@@ -62,17 +62,14 @@ async def textToDesc(request : textDescModel):
     """
     if (request.text):
         ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy)"
-        prompt = set_lang_english+request.text+ntpi
-        print(prompt)
+        prompt = set_lang_english+request.text+text_prompt_instructions
         response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": {prompt}}],
     )
-
+        print(response.choices[0].message.content)
         if (response.choices[0].message.content):
             response_json = response.choices[0].message.content
-            print("#####################")
-            print(response_json)
             response_json = extract_json(response_json)
             if (response_json):
                 return response_json # Using the default Status code i.e. Status 200
@@ -105,7 +102,7 @@ async def upload_image(file: UploadFile = File(...)):
         
         # Use the image with g4f.client
         with file_path.open("rb") as img:
-            prompt = set_lang_english+image_identify_prompt_instructions
+            prompt = set_lang_english+image_identify_prompt_instructions2
             response = clientimage.chat.completions.create(
                 model="gemini-pro-vision",
                 messages=[{"role": "user", "content": "{prompt}"}],
@@ -118,8 +115,9 @@ async def upload_image(file: UploadFile = File(...)):
         # Delete the locally saved image
         file_path.unlink()
         
-       
-        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
+        print("#################")
+        print(response_content)
+        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy)"
         prompt = set_lang_english+ response_content+ntpi+image_identify_prompt_instructions2
         
         response = client.chat.completions.create(
@@ -129,7 +127,7 @@ async def upload_image(file: UploadFile = File(...)):
 
         if (response.choices[0].message.content):
             response_json = response.choices[0].message.content
-            print(response_json)
+           
             response_json = extract_json(response_json)
             if (response_json):
                 return response_json # Using the default Status code i.e. Status 200
