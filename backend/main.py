@@ -1,4 +1,11 @@
 from fastapi import FastAPI
+
+from routes import assist
+
+
+
+
+
 from routes.user import router
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -19,7 +26,9 @@ middleware = [
     )
 ]
 app = FastAPI(middleware=middleware)
+app.include_router(assist.router, prefix="/assist")
 app.include_router(router)
+
 
 
 
