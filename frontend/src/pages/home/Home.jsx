@@ -1,25 +1,37 @@
 import React from 'react';
+import ImageSearchIcon from '@mui/icons-material/ImageSearch';
+import DescriptionIcon from '@mui/icons-material/Description';
+import VideoSettingsIcon from '@mui/icons-material/VideoSettings';
+import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
 let options = [
   {
-    icon: "logo.svg",
+    icon: <DescriptionIcon style={{ fontSize: '60px', color: '#f3830c' }} />,
     title: "Text Search",
-    desc: "lorem ipsum dollar sit amet"
+    desc: "Describe product to search it",
+    path: "/home/text"
   },
   {
-    icon: "logo.svg",
+    icon: <ImageSearchIcon style={{ fontSize: '60px', color: '#f3830c' }}/>,
     title: "Image Search",
-    desc: "lorem ipsum dollar sit amet"
+    desc: "Upload an image to search product in the image",
+    path: "/home/image"
   },
   {
-    icon: "logo.svg",
+    icon: <VideoSettingsIcon style={{ fontSize: '60px', color: '#f3830c' }}/>,
     title: "Video Search",
-    desc: "lorem ipsum dollar sit amet"
+    desc: "Upload a video to search product in the video",
+    path: "/home/video"
   }
 ];
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  const handleOptionClick = (path) => {
+    navigate(path);
+  };
   return (
     <div>
       <div className='header'>
@@ -27,15 +39,24 @@ const Home = () => {
       </div>
       <div className='container'>
         <div className='searchOptions'>
-          {options.map(({ icon, title, desc }, index) => (
-            <div className='option' key={index}>
-              <img src={icon} alt="logo" />
-              <h3>{title}</h3>
+          {options.map(({ icon, title, desc, path }, index) => (
+            <div className='option' key={index} onClick={() => handleOptionClick(path)}>
+              <div className='icon'>{icon}</div>
+              <h2>{title}</h2>
               <p>{desc}</p>
             </div>
           ))}
         </div>
-        <div className='history'></div>
+        <div className='history'>
+        <h2 style={{ textAlign: 'left' }}>Previously detected item</h2>
+          <div className='itemCards'>
+            <div className='item'><VideoSettingsIcon/></div>
+            <div className='item'><VideoSettingsIcon/></div>
+            <div className='item'><VideoSettingsIcon/></div>
+            <div className='item'><VideoSettingsIcon/></div>
+            <div className='item'><VideoSettingsIcon/></div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,33 @@
+.resultCard{
+    height: 280px;
+    width: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-top: 40px;
+    /* border: 2px solid #f3830c; */
+}
+.resimg{
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    
+}
+.btn{
+    height: 50px;
+    width: 180px;
+    background: #f3830c;
+    font-family: "Jockey One", sans-serif;
+    margin-top: 10px;
+    font-size: 20px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    color: white;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
