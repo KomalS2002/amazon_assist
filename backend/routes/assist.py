@@ -11,6 +11,10 @@ from dotenv import load_dotenv
 from models.text_to_desc import textDescModel
 from g4f.client import Client 
 from g4f.Provider.GeminiPro import GeminiPro 
+from database.dbconnect import get_db,Base
+from sqlalchemy.orm import Session
+from models.user import Users
+from authUtils.JWTBearer import JWTBearer
 
 # Load environment variables
 load_dotenv()
@@ -39,7 +43,7 @@ def extract_json(input_string):
         return None
 
 @router.post("/text")
-async def textToDesc(request: textDescModel):
+async def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
     """
     Request format:
     {
@@ -70,7 +74,7 @@ async def textToDesc(request: textDescModel):
         return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_400_BAD_REQUEST)
 
 @router.post("/image")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile = File(...),db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
     try:
         # Save the uploaded file locally
         upload_folder = Path("uploaded_images")
