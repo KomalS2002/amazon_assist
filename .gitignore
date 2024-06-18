@@ -9,3 +9,4 @@ backend/venv/
 backend/.env
 env
 backend/env
+images/
