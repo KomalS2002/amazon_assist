@@ -39,7 +39,7 @@ def extract_json(input_string):
         return None
 
 @router.post("/text")
-def textToDesc(request: textDescModel):
+def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
     """
     Request format:
     {
