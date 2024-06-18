@@ -28,7 +28,7 @@ router = APIRouter()
 set_lang_english = "Reply in English; "
 text_prompt_instructions = "; identify the products described here and generate keywords related to the product which will help in searching the product on Amazon (return the result as JSON in the format product:{keywords}) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON"
 image_identify_prompt_instructions = "; identify the products present here and generate keywords related to the product which will help in searching the product on Amazon like build, color, style, design. DO NOT DESCRIBE THE IMAGE JUST WRITE THE KEYWORDS FOR THE DIFFERENT ITEMS PRESENT IN THE IMAGE (return the result as JSON in the format product:{keywords}) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
-image_identify_prompt_instructions2 = "; (return the result as JSON where each product is the key and its keywords are the value) (discard any product for which proper keywords are not found) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
+image_identify_prompt_instructions2 = "; (return the result as JSON where each product name is the key and the keywords decribing its characteristics are the value) (discard any product for which proper keywords are not found) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
 
 def extract_json(input_string):
     try:
@@ -39,7 +39,7 @@ def extract_json(input_string):
         return None
 
 @router.post("/text")
-async def textToDesc(request: textDescModel):
+def textToDesc(request: textDescModel):
     """
     Request format:
     {
@@ -47,14 +47,14 @@ async def textToDesc(request: textDescModel):
     }
     """
     if (request.text):
-        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy)"
-        prompt = set_lang_english+request.text+ntpi
+        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that people can buy)"
+        prompt = set_lang_english+request.text+image_identify_prompt_instructions2
         print(prompt)
         response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": {prompt}}],
     )
-
+        print(response.choices[0].message.content)
         if (response.choices[0].message.content):
             response_json = response.choices[0].message.content
             response_json = extract_json(response_json)
@@ -70,7 +70,7 @@ async def textToDesc(request: textDescModel):
         return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_400_BAD_REQUEST)
 
 @router.post("/image")
-async def upload_image(file: UploadFile = File(...)):
+def upload_image(file: UploadFile = File(...)):
     try:
         # Save the uploaded file locally
         upload_folder = Path("uploaded_images")
@@ -82,7 +82,7 @@ async def upload_image(file: UploadFile = File(...)):
 
         # Use the image with g4f.client
         with file_path.open("rb") as img:
-            prompt = set_lang_english+image_identify_prompt_instructions
+            prompt = set_lang_english+image_identify_prompt_instructions2
             response = clientimage.chat.completions.create(
                 model="gemini-pro-vision",
                 messages=[{"role": "user", "content": prompt}],
@@ -95,7 +95,7 @@ async def upload_image(file: UploadFile = File(...)):
         # Delete the locally saved image
         file_path.unlink()
         
-       
+        print(response_content)
         ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
         prompt = set_lang_english+ response_content+ntpi+image_identify_prompt_instructions2
         
