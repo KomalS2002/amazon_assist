@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
 import './SignUp.css';
 
 const SignUp=()=>{
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const onSuccess = (credentialResponse) => {
     const idToken = credentialResponse.credential;
     console.log('Google ID Token:', idToken);
@@ -19,6 +24,8 @@ const SignUp=()=>{
     axios.post('http://127.0.0.1:8000/auth', payload)
       .then((res) => {
         console.log('Backend response:', res.data);
+        login(res.data);
+        navigate('/home');
       })
       .catch((error) => {
         if (error.response) {
@@ -34,13 +41,15 @@ const SignUp=()=>{
 
 
   return (
-    <div className='.signup-container'>
-     <GoogleLogin
-     onSuccess={onSuccess}
-    onError={() => {
-    console.log('Login Failed');
-  }}
-/>;
+    <div className='signup-container'>
+      <div className='google-login-button'>
+        <GoogleLogin
+          onSuccess={onSuccess}
+          onError={() => {
+            console.log('Login Failed');
+          }}
+        />
+      </div>
     </div>
   )
 }
