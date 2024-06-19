@@ -8,6 +8,7 @@ const TextSearch = () => {
   const [inputText, setInputText] = useState('');
   const [submittedText, setSubmittedText] = useState('');
   const [detectedItems, setDetectedItems] = useState([]);
+  const [error, setError] = useState(null);
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
@@ -16,15 +17,21 @@ const TextSearch = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmittedText(inputText);
-    console.log(inputText);
+    console.log(inputText)
+
     try {
-      const response = await axios.post('http://127.0.0.1:8000/assist/text/', {
-      "text": inputText
-       
+      const response = await axios.post('http://127.0.0.1:8000/assist/text', {
+        text: inputText
       });
-      setDetectedItems(response.data.products);
+      console.log('Server response:', response.data);
+      const products = response.data.products || [];
+      setDetectedItems(products);
     } catch (error) {
       console.error('Error posting text:', error);
+      if (error.response) {
+        console.error('Response error data:', error.response.data); // Debug log
+      }
+      setError('Error posting text');
     }
   };
 
@@ -50,6 +57,11 @@ const TextSearch = () => {
           {submittedText && (
             <div className='descr'>
               <p>{submittedText}</p>
+            </div>
+          )}
+          {error && (
+            <div className='error'>
+              <strong>{error}</strong>
             </div>
           )}
         </div>
