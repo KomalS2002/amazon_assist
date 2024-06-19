@@ -19,6 +19,7 @@ from PIL import Image
 import io
 from fastapi.encoders import jsonable_encoder
 import time
+from g4f.Provider.FreeChatgpt import FreeChatgpt
 
 # Load environment variables
 load_dotenv()
@@ -79,11 +80,8 @@ def convert_to_dict(json_data):
     return dict_data
 
 def generate_images_from_json(json_data):
-
+    print(type(json_data))
     new_json = {}
-    
-   
-    
     for item in json_data:
         if isinstance(item, dict) and len(item) == 1:  # Ensure item is a dictionary with exactly one key-value pair
             item_name = next(iter(item))  # Get the key (item name) from the dictionary
@@ -121,7 +119,18 @@ def extract_json(input_string):
         print(f"JSON decode error: {e}")
         return None
 
-# 
+def string_to_json(tempres):
+    try:
+        # Strip any leading/trailing whitespace from the string
+        tempres = tempres.strip()
+        # Parse the string as JSON
+        json_data = json.loads(tempres)
+        return json_data
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        return None
+    
+
 @router.post("/text")
 #after testing comment out below line
 # def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
@@ -132,26 +141,27 @@ def textToDesc(request: textDescModel):
         "text": "text_to_be_processed"
     }
     """
+    print("THIS IS WHAT WE RECEIVED")
+    print(request.text)
+    tempdict = {}
+    tempdict["Modern lamps"] = {"tags": "minimalist, contemporary, stylish, elegant, inviting, cozy", "image_link": "images/Modern_lamps.png"}
+    tempdict["Table lamps with multiple bulbs"] = {"tags": "reading, working, bed, light, stylish, romantic",    "image_link": "images/Table_lamps_with_multiple_bulbs.png"}
+    return JSONResponse(content=(tempdict), status_code=status.HTTP_200_OK)
     if request.text:
         ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that people can buy)"
         prompt = set_lang_english + request.text + image_identify_prompt_instructions2
       
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": f"{prompt}"}],
+            messages=[{"role": "user", "content": prompt}],
         )
-        # print(response.choices[0].message.content)
         if response.choices[0].message.content:
             response_json = response.choices[0].message.content
-            print("##########@@@@@@@@@@@@@@")
-            print(response_json)
             response_json = extract_json(response_json)
-            print("##########$$$$$$$$$###########")
-            print(response_json)
             if response_json:
                 new_json = generate_images_from_json(response_json)
                 print(new_json)
-                return new_json  # Using the default Status code i.e. Status 200
+                return new_json  
             else:
                 msg = [{"message": "Incorrect data/missing data"}]
                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
@@ -168,6 +178,10 @@ def textToDesc(request: textDescModel):
 # def upload_image(file: UploadFile = File(...),db: Session = Depends(get_db),user: Users = Depends(JWTBearer())): 
 def upload_image(file: UploadFile = File(...)):
     try:
+        tempdict = {}
+        tempdict["Modern lamps"] = {"tags": "minimalist, contemporary, stylish, elegant, inviting, cozy", "image_link": "images/Modern_lamps.png"}
+        tempdict["Table lamps with multiple bulbs"] = {"tags": "reading, working, bed, light, stylish, romantic",    "image_link": "images/Table_lamps_with_multiple_bulbs.png"}
+        return JSONResponse(content=(tempdict), status_code=status.HTTP_200_OK)
         # Save the uploaded file locally
         upload_folder = Path("uploaded_images")
         upload_folder.mkdir(exist_ok=True)
@@ -175,26 +189,30 @@ def upload_image(file: UploadFile = File(...)):
 
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-
+       
         # Use the image with g4f.client
         with file_path.open("rb") as img:
-            prompt = set_lang_english+image_identify_prompt_instructions2
+            ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that people can buy)"
+            prompt = set_lang_english+ntpi+"convert all text in response in English"
+            
             response = clientimage.chat.completions.create(
                 model="gemini-pro-vision",
                 messages=[{"role": "user", "content": prompt}],
                 image=img
             )
-
+     
         # Extract the response content
         response_content = response.choices[0].message.content
-
+        print("##################")
+        print(response_content)
         # Delete the locally saved image
         file_path.unlink()
         
-        print(response_content)
+       
         ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
-        prompt = set_lang_english+ response_content+ntpi+image_identify_prompt_instructions2
-        
+        prompt = set_lang_english+ response_content+image_identify_prompt_instructions2
+        print("^^^^^^^^^^^^^^^^^^^")
+        print(response_content)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -202,10 +220,12 @@ def upload_image(file: UploadFile = File(...)):
 
         if response.choices[0].message.content:
             response_json = response.choices[0].message.content
-           
+            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+            print(response_json)
             response_json = extract_json(response_json)
             if response_json:
-                return response_json  # Using the default Status code i.e. Status 200
+                new_json = generate_images_from_json(response_json)
+                return new_json  # Using the default Status code i.e. Status 200
             else:
                 msg = [{"message": "Incorrect data/missing data"}]
                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_400_BAD_REQUEST)
