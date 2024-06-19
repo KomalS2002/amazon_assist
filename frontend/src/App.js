@@ -12,7 +12,7 @@ const App = () => {
 
   return (
     <div className="App">
-      <AuthProvider>
+      {/* <AuthProvider>
         <Router>
           <Routes>
             <Route path="/" element={user ? <Navigate to="/home" /> : <SignUp />} />
@@ -22,7 +22,18 @@ const App = () => {
             <Route path="/home/text" element={user ? <TextSearch /> : <Navigate to="/" />} />
           </Routes>
         </Router>
-      </AuthProvider>
+      </AuthProvider> */}
+       <Router>
+     <Routes>
+        <Route exact path="/" element={SignUp} />
+        <Route index element={<SignUp />} />
+        <Route path = "home" element = {<Home />}/>
+        <Route path = "home/image" element = {<ImageSearch />}/>
+        <Route path = "home/video" element = {<VideoSearch />}/>
+        <Route path = "home/text" element = {<TextSearch />}/>
+      </Routes>
+
+</Router>
     </div>
   );
 };
