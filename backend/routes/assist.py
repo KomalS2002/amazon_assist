@@ -43,7 +43,7 @@ image_identify_prompt_instructions2 = "; (return the result as JSON where the ac
 HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 headers = {"Authorization": f"Bearer {huggingface_api_key}"}
 
-def query(payload, max_retries=3, retry_delay=1000):
+def query(payload, max_retries=3, retry_delay=100):
     retries = 0
     while retries < max_retries:
         response = requests.post(HUGGINGFACE_API_URL, headers=headers, json=payload)
@@ -159,10 +159,6 @@ def textToDesc(request: textDescModel):
 @router.post("/image")
 def upload_image(file: UploadFile = File(...)):
     try:
-        tempdict = {}
-        tempdict["Modern lamps"] = {"tags": "minimalist, contemporary, stylish, elegant, inviting, cozy", "image_link": "images/Modern_lamps.png"}
-        tempdict["Table lamps with multiple bulbs"] = {"tags": "reading, working, bed, light, stylish, romantic",    "image_link": "images/Table_lamps_with_multiple_bulbs.png"}
-        return JSONResponse(content=(tempdict), status_code=status.HTTP_200_OK)
         # Save the uploaded file locally
         upload_folder = Path("uploaded_images")
         upload_folder.mkdir(exist_ok=True)
@@ -173,35 +169,30 @@ def upload_image(file: UploadFile = File(...)):
        
         # Use the image with g4f.client
         with file_path.open("rb") as img:
-            ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that people can buy)"
-            prompt = set_lang_english+ntpi+"convert all text in response in English"
-            
+            # ntpi= '; find name of products in image and list product name and features like this json list : "{"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],};without ``` '
+            ntpi1= '; only return name of product;without ``` '
+            # prompt = set_lang_english+ntpi+image_identify_prompt_instructions2
             response = clientimage.chat.completions.create(
                 model="gemini-pro-vision",
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": ntpi1}],
                 image=img
             )
-     
         # Extract the response content
         response_content = response.choices[0].message.content
-        print("##################")
         print(response_content)
         # Delete the locally saved image
         file_path.unlink()
-        
-       
-        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
-        prompt = set_lang_english+ response_content+image_identify_prompt_instructions2
-        print("^^^^^^^^^^^^^^^^^^^")
-        print(response_content)
-        response = client.chat.completions.create(
+
+        ntpi2= '; for the products given ,list product names as key and features as value in given prompt like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}; without ```'
+        prompt = set_lang_english+ response_content+ntpi2
+        response1 = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
         )
+        print("################################################################################################################")
 
-        if response.choices[0].message.content:
-            response_json = response.choices[0].message.content
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        if response1.choices[0].message.content:
+            response_json = response1.choices[0].message.content
             print(response_json)
             response_json = extract_json(response_json)
             if response_json:
