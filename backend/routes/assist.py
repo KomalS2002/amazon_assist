@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from models.text_to_desc import textDescModel
 from g4f.client import Client 
 from g4f.Provider.GeminiPro import GeminiPro 
+from g4f.Provider.GeminiProChat import GeminiProChat
 from database.dbconnect import get_db,Base
 from sqlalchemy.orm import Session
 from models.user import Users
@@ -20,18 +21,15 @@ import io
 from fastapi.encoders import jsonable_encoder
 import time
 
-# Load environment variables
+router = APIRouter()
 load_dotenv()
 
-# Initialize the client with the GeminiPro provider
-client = Client()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
-clientimage = Client(provider=GeminiPro, api_key=gemini_api_key)
-
 huggingface_api_key = os.getenv("HUGGINGFACE_API_KEY")
-# Initialize FastAPI and APIRouter
-app = FastAPI()
-router = APIRouter()
+
+# Initialize the client with the GeminiPro provider
+client = Client(provider=GeminiProChat,api_key=gemini_api_key)
+clientimage = Client(provider=GeminiPro, api_key=gemini_api_key)
 
 # Prompts
 set_lang_english = "Reply only in English; "
@@ -79,31 +77,30 @@ def convert_to_dict(json_data):
     return dict_data
 
 def generate_images_from_json(json_data):
-
     new_json = {}
-    
-   
-    
     for item in json_data:
-        if isinstance(item, dict) and len(item) == 1:  # Ensure item is a dictionary with exactly one key-value pair
-            item_name = next(iter(item))  # Get the key (item name) from the dictionary
-            tags = item[item_name]  # Get the value (list of tags) from the dictionary
+        if item: 
+            # item_name = next(iter(item))  # Get the key (item name) from the dictionary
+            tags = json_data[item]  # Get the value (list of tags) from the dictionary
             
-            prompt = f"{item_name}: {', '.join(tags)}"
+            prompt = f"{item}: {', '.join(tags)}"
+            # prompt = "generate cat image"
+            print(prompt)
             image_bytes = query({"inputs": prompt})
             
             if image_bytes:
                 try:
                     image = Image.open(io.BytesIO(image_bytes))
-                    image_link = save_image(image_bytes, item_name)
+                    image_link = save_image(image_bytes, item)
                     
-                    new_json[item_name] = {
+                    new_json[item] = {
                         "tags": ', '.join(tags),
                         "image_link": image_link
                     }
+
                 except IOError:
-                    print(f"Error: Could not generate image for {item_name}")
-                    new_json[item_name] = {
+                    print(f"Error: Could not generate image for {item}")
+                    new_json[item] = {
                         "tags": ', '.join(tags),
                         "image_link": "Error: Image could not be generated"
                     }
@@ -122,36 +119,27 @@ def extract_json(input_string):
         return None
 
 # 
-@router.post("/text")
 #after testing comment out below line
 # def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
+
+@router.post("/text")
 def textToDesc(request: textDescModel):
-    """
-    Request format:
-    {
-        "text": "text_to_be_processed"
-    }
-    """
     if request.text:
-        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that people can buy)"
-        prompt = set_lang_english + request.text + image_identify_prompt_instructions2
-      
+        ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
+        prompt = request.text + ntpi
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": f"{prompt}"}],
         )
-        # print(response.choices[0].message.content)
+
         if response.choices[0].message.content:
             response_json = response.choices[0].message.content
-            print("##########@@@@@@@@@@@@@@")
             print(response_json)
             response_json = extract_json(response_json)
-            print("##########$$$$$$$$$###########")
-            print(response_json)
             if response_json:
-                new_json = generate_images_from_json(response_json)
-                print(new_json)
-                return new_json  # Using the default Status code i.e. Status 200
+                newjson = generate_images_from_json(response_json)
+                print(newjson)
+                return newjson  # Using the default Status code i.e. Status 200
             else:
                 msg = [{"message": "Incorrect data/missing data"}]
                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
@@ -163,9 +151,11 @@ def textToDesc(request: textDescModel):
     
 
 
-@router.post("/image")
+
+
 #after testing comment out below line
 # def upload_image(file: UploadFile = File(...),db: Session = Depends(get_db),user: Users = Depends(JWTBearer())): 
+@router.post("/image")
 def upload_image(file: UploadFile = File(...)):
     try:
         # Save the uploaded file locally
@@ -187,12 +177,12 @@ def upload_image(file: UploadFile = File(...)):
 
         # Extract the response content
         response_content = response.choices[0].message.content
-
+        print(response_content)
         # Delete the locally saved image
         file_path.unlink()
         
         print(response_content)
-        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
+        ntpi= '; extract keywords related to each object described here and list them like this {"Product 1": ["feature 1","Feature 2","feature 3"],"Product 2": ["feature 1","Feature 2","feature 3"],"Product 3": ["feature 1","Feature 2","feature 3"],}'
         prompt = set_lang_english+ response_content+ntpi+image_identify_prompt_instructions2
         
         response = client.chat.completions.create(
