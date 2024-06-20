@@ -21,12 +21,18 @@ import io
 from fastapi.encoders import jsonable_encoder
 import time
 from g4f.Provider.FreeChatgpt import FreeChatgpt
+import boto3
 
 router = APIRouter()
 load_dotenv()
 
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 huggingface_api_key = os.getenv("HUGGINGFACE_API_KEY")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+
+s3 = boto3.client('s3', aws_access_key_id=AWS_ACCESS_KEY_ID,aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 # Initialize the client with the GeminiPro provider
 client = Client(provider=GeminiProChat,api_key=gemini_api_key)
@@ -42,6 +48,8 @@ image_identify_prompt_instructions2 = "; (return the result as JSON where the ac
 
 HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 headers = {"Authorization": f"Bearer {huggingface_api_key}"}
+
+
 
 def query(payload, max_retries=3, retry_delay=100):
     retries = 0
@@ -62,12 +70,24 @@ def query(payload, max_retries=3, retry_delay=100):
     print(f"Failed after {max_retries} retries.")
     return None
 
-def save_image(image_bytes, item_name):
-    image_path = f"images/{item_name.replace(' ', '_')}.png"
-    os.makedirs(os.path.dirname(image_path), exist_ok=True)
-    with open(image_path, 'wb') as f:
-        f.write(image_bytes)
-    return image_path
+
+def s3fileUpload(file_content:UploadFile,item_name:str):
+    if file_content:
+        s3.upload_fileobj(file_content,BUCKET_NAME,f"{item_name}.png")
+        link = "https://d1voydi2q6xpb1.cloudfront.net/"f"{item_name}.png"
+        return link
+    else:
+        return "error in uploading"
+
+
+# def save_image(image_bytes, item_name):
+#     image_path = f"images/{item_name.replace(' ', '_')}.png"
+#     os.makedirs(os.path.dirname(image_path), exist_ok=True)
+#     with open(image_path, 'wb') as f:
+#         f.write(image_bytes)
+#         # image_link1 = s3fileUpload(image)
+#         # print(image_link1)
+#     return image_path
 
 def convert_to_dict(json_data):
     # Convert json_data from string-value format to dict format
@@ -82,18 +102,18 @@ def generate_images_from_json(json_data):
     for item in json_data:
         if item: 
             # item_name = next(iter(item))  # Get the key (item name) from the dictionary
-            tags = json_data[item]  # Get the value (list of tags) from the dictionary
-            
+            tags = json_data[item]  # Get the value (list of tags) from the dictionary  
             prompt = f"{item}: {', '.join(tags)}"
-            # prompt = "generate cat image"
             print(prompt)
             image_bytes = query({"inputs": prompt})
             
             if image_bytes:
                 try:
-                    image = Image.open(io.BytesIO(image_bytes))
-                    image_link = save_image(image_bytes, item)
-                    
+                    # image_link = save_image(image_bytes, item)
+                    image = io.BytesIO(image_bytes)
+                    image_link = s3fileUpload(image,item)
+                    print(image_link)
+
                     new_json[item] = {
                         "tags": ', '.join(tags),
                         "image_link": image_link
