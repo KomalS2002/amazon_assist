@@ -6,8 +6,39 @@
     align-items: center;
     justify-content: space-around;
     border-radius: 15px;
-    padding: 30px;
+    padding: 20px;
     font-size: 20px;
     color: black;
     text-align: start;
 }
+
+.textInput {
+    width: 300px;
+    height: 160px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 2px solid #f3830c;
+    border-radius: 4px;
+    resize: vertical;
+  }
+  
+  .submitButton {
+    padding: 10px 20px;
+    background-color: #f3830c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  
+  .submitButton:hover {
+    background-color: #d3730b;
+  }
+  .formArea{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }

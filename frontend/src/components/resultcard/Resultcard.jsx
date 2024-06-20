@@ -1,7 +1,7 @@
 import React from 'react'
 import LaunchIcon from '@mui/icons-material/Launch';
 import './Resultcard.css'
-const Resultcard = () => {
+const Resultcard = ({ item } ) => {
   return (
       <div className='resultCard'>
             <p style={{margin:'5px'}}>Item name</p>
@@ -9,6 +9,7 @@ const Resultcard = () => {
               <button className='btn'>Go to Amazon
               <LaunchIcon/>
               </button>
+              <p>{ item }</p>
             </div>
     
   )

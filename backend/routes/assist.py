@@ -20,6 +20,7 @@ from PIL import Image
 import io
 from fastapi.encoders import jsonable_encoder
 import time
+from g4f.Provider.FreeChatgpt import FreeChatgpt
 
 router = APIRouter()
 load_dotenv()
@@ -129,7 +130,7 @@ def textToDesc(request: textDescModel):
         prompt = request.text + ntpi
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": f"{prompt}"}],
+            messages=[{"role": "user", "content": prompt}],
         )
 
         if response.choices[0].message.content:
@@ -158,6 +159,10 @@ def textToDesc(request: textDescModel):
 @router.post("/image")
 def upload_image(file: UploadFile = File(...)):
     try:
+        tempdict = {}
+        tempdict["Modern lamps"] = {"tags": "minimalist, contemporary, stylish, elegant, inviting, cozy", "image_link": "images/Modern_lamps.png"}
+        tempdict["Table lamps with multiple bulbs"] = {"tags": "reading, working, bed, light, stylish, romantic",    "image_link": "images/Table_lamps_with_multiple_bulbs.png"}
+        return JSONResponse(content=(tempdict), status_code=status.HTTP_200_OK)
         # Save the uploaded file locally
         upload_folder = Path("uploaded_images")
         upload_folder.mkdir(exist_ok=True)
@@ -165,26 +170,30 @@ def upload_image(file: UploadFile = File(...)):
 
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-
+       
         # Use the image with g4f.client
         with file_path.open("rb") as img:
-            prompt = set_lang_english+image_identify_prompt_instructions2
+            ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that people can buy)"
+            prompt = set_lang_english+ntpi+"convert all text in response in English"
+            
             response = clientimage.chat.completions.create(
                 model="gemini-pro-vision",
                 messages=[{"role": "user", "content": prompt}],
                 image=img
             )
-
+     
         # Extract the response content
         response_content = response.choices[0].message.content
+        print("##################")
         print(response_content)
         # Delete the locally saved image
         file_path.unlink()
         
+       
+        ntpi= "; extract keywords related to each object described here and list them according to the object (only get inanimate objects that poeple can buy like chair table desk etc)"
+        prompt = set_lang_english+ response_content+image_identify_prompt_instructions2
+        print("^^^^^^^^^^^^^^^^^^^")
         print(response_content)
-        ntpi= '; extract keywords related to each object described here and list them like this {"Product 1": ["feature 1","Feature 2","feature 3"],"Product 2": ["feature 1","Feature 2","feature 3"],"Product 3": ["feature 1","Feature 2","feature 3"],}'
-        prompt = set_lang_english+ response_content+ntpi+image_identify_prompt_instructions2
-        
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
@@ -192,10 +201,12 @@ def upload_image(file: UploadFile = File(...)):
 
         if response.choices[0].message.content:
             response_json = response.choices[0].message.content
-           
+            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+            print(response_json)
             response_json = extract_json(response_json)
             if response_json:
-                return response_json  # Using the default Status code i.e. Status 200
+                new_json = generate_images_from_json(response_json)
+                return new_json  # Using the default Status code i.e. Status 200
             else:
                 msg = [{"message": "Incorrect data/missing data"}]
                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_400_BAD_REQUEST)
