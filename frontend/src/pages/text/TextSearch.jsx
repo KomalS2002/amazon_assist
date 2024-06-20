@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
-import Resultcard from '../../components/resultcard/Resultcard';
+import ResultCard from '../../components/resultcard/Resultcard';
+import Loader from '../../components/loader/Loader';
 import './TextSearch.css';
 
 const TextSearch = () => {
@@ -9,6 +10,7 @@ const TextSearch = () => {
   const [submittedText, setSubmittedText] = useState('');
   const [detectedItems, setDetectedItems] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
@@ -17,28 +19,38 @@ const TextSearch = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmittedText(inputText);
-    console.log(inputText)
+    console.log(inputText);
 
     try {
+      setLoading(true);
       const response = await axios.post('http://127.0.0.1:8000/assist/text', {
-        text: inputText
+        text: inputText,
       });
       console.log('Server response:', response.data);
-      const products = response.data.products || [];
-      setDetectedItems(products);
+
+      const products = response.data;
+      const itemsArray = Object.keys(products).map((key) => ({
+        name: key,
+        tags: products[key].tags,
+        image_link: products[key].image_link,
+      }));
+      setDetectedItems(itemsArray);
+      setLoading(false); // Set loading to false after response is received
+      setError(null);
     } catch (error) {
       console.error('Error posting text:', error);
       if (error.response) {
-        console.error('Response error data:', error.response.data); // Debug log
+        console.error('Response error data:', error.response.data);
       }
       setError('Error posting text');
+      setLoading(false); // Set loading to false in case of error
     }
   };
 
   return (
     <div>
       <div className='header'>
-        <img className='logo' src="/logo.svg" alt="logo" />
+        <img className='logo' src='/logo.svg' alt='logo' />
         <h3>Text Search</h3>
         <SearchIcon style={{ fontSize: '38px' }} />
       </div>
@@ -52,7 +64,9 @@ const TextSearch = () => {
               onChange={handleInputChange}
               placeholder='Enter your text here...'
             ></textarea>
-            <button type='submit' className='submitButton'>Submit</button>
+            <button type='submit' className='submitButton'>
+              Submit
+            </button>
           </form>
           {submittedText && (
             <div className='descr'>
@@ -68,12 +82,16 @@ const TextSearch = () => {
         <div className='result'>
           <div className='holder'>Detected Items</div>
           <div className='resultsWrap'>
-            {detectedItems.length > 0 ? (
-              detectedItems.map((item, index) => (
-                <Resultcard key={index} item={item} />
-              ))
+            {loading ? ( // Render loader if loading is true
+              <Loader />
             ) : (
-              <p>No items detected.</p>
+              detectedItems.length > 0 ? (
+                detectedItems.map((item, index) => (
+                  <ResultCard key={index} item={item} />
+                ))
+              ) : (
+                <p>No items detected.</p>
+              )
             )}
           </div>
         </div>

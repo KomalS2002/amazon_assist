@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './ImageSearch.css';
 import SearchIcon from '@mui/icons-material/Search';
-import Resultcard from '../../components/resultcard/Resultcard';
+import ResultCard from '../../components/resultcard/Resultcard';
+import Loader from '../../components/loader/Loader';
 
 const ImageSearch = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [detectedItems, setDetectedItems] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleImageChange = (e) => {
     setSelectedImage(e.target.files[0]);
@@ -20,37 +22,31 @@ const ImageSearch = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.readAsArrayBuffer(selectedImage);
-    reader.onloadend = async () => {
-      const binaryString = reader.result;
-      console.log(binaryString)
-      try {
-        const response = await axios.post('http://127.0.0.1:8000/assist/image', {
-          image: binaryString
-          
-        }, {
-          headers: {
-            'Content-Type': 'application/octet-stream',
-          },
-        });
-        const products = response.data.products || [];
-        setDetectedItems(products);
-        setError(null);
-      } catch (error) {
-        console.error('Error posting image:', error);
-        if (error.response) {
-          console.error('Response error data:', error.response.data);
-          console.error('Response status:', error.response.status);
-          console.error('Response headers:', error.response.headers);
-        }
-        setError('Error posting image');
-      }
-    };
-    reader.onerror = (error) => {
-      console.error('Error reading file:', error);
-      setError('Error reading file');
-    };
+    const formData = new FormData();
+    formData.append('file', selectedImage);
+
+    try {
+      setLoading(true); // Set loading to true while waiting for response
+      const response = await axios.post('http://127.0.0.1:8000/assist/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const products = response.data;
+      const itemsArray = Object.keys(products).map((key) => ({
+        name: key,
+        tags: products[key].tags,
+        image_link: products[key].image_link,
+      }));
+      setDetectedItems(itemsArray);
+      setError(null);
+    } catch (error) {
+      console.error('Error posting image:', error);
+      setError('Error posting image');
+    } finally {
+      setLoading(false); // Set loading back to false after response is received
+    }
   };
 
   return (
@@ -91,12 +87,16 @@ const ImageSearch = () => {
         <div className='result'>
           <div className='holder'>Detected Items</div>
           <div className='resultsWrap'>
-            {detectedItems.length > 0 ? (
-              detectedItems.map((item, index) => (
-                <Resultcard key={index} item={item} />
-              ))
+            {loading ? ( // Render loader if loading is true
+              <Loader />
             ) : (
-              <p>No items detected.</p>
+              detectedItems.length > 0 ? (
+                detectedItems.map((item, index) => (
+                  <ResultCard key={index} item={item} />
+                ))
+              ) : (
+                <p>No items detected.</p>
+              )
             )}
           </div>
         </div>
