@@ -75,3 +75,25 @@
     justify-content: center;
     align-items: center;
 }
+
+.formArea{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .fileInput {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: black;
+    border: 2px solid #f3830c;
+    border-radius: 4px;
+    margin-bottom: 30px;
+    padding: 10px; 
+    cursor: pointer; 
+  }
+  .fileInput:hover {
+    background-color: #f3830c;
+    color: white;
+  }

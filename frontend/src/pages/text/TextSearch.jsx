@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import ResultCard from '../../components/resultcard/Resultcard';
+import Loader from '../../components/loader/Loader';
 import './TextSearch.css';
 
 const TextSearch = () => {
@@ -9,6 +10,7 @@ const TextSearch = () => {
   const [submittedText, setSubmittedText] = useState('');
   const [detectedItems, setDetectedItems] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
@@ -20,12 +22,12 @@ const TextSearch = () => {
     console.log(inputText);
 
     try {
+      setLoading(true);
       const response = await axios.post('http://127.0.0.1:8000/assist/text', {
         text: inputText,
       });
       console.log('Server response:', response.data);
 
-      // Assuming response.data is in the format { "Modern lamps": { "tags": "...", "image_link": "..." }, ... }
       const products = response.data;
       const itemsArray = Object.keys(products).map((key) => ({
         name: key,
@@ -33,12 +35,15 @@ const TextSearch = () => {
         image_link: products[key].image_link,
       }));
       setDetectedItems(itemsArray);
+      setLoading(false); // Set loading to false after response is received
+      setError(null);
     } catch (error) {
       console.error('Error posting text:', error);
       if (error.response) {
-        console.error('Response error data:', error.response.data); // Debug log
+        console.error('Response error data:', error.response.data);
       }
       setError('Error posting text');
+      setLoading(false); // Set loading to false in case of error
     }
   };
 
@@ -77,12 +82,16 @@ const TextSearch = () => {
         <div className='result'>
           <div className='holder'>Detected Items</div>
           <div className='resultsWrap'>
-            {detectedItems.length > 0 ? (
-              detectedItems.map((item, index) => (
-                <ResultCard key={index} item={item} />
-              ))
+            {loading ? ( // Render loader if loading is true
+              <Loader />
             ) : (
-              <p>No items detected.</p>
+              detectedItems.length > 0 ? (
+                detectedItems.map((item, index) => (
+                  <ResultCard key={index} item={item} />
+                ))
+              ) : (
+                <p>No items detected.</p>
+              )
             )}
           </div>
         </div>
@@ -92,9 +101,3 @@ const TextSearch = () => {
 };
 
 export default TextSearch;
-
-
-
-
-
-// const PF = process.env.REACT_APP_PUBLIC_FOLDER;
