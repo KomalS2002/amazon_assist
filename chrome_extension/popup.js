@@ -1,31 +1,33 @@
 document.getElementById('identifyText').addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: identifyFromText
+        target: { tabId: tab.id },
+        function: identifyFromText
     });
 });
 
-async function identifyFromText() {
+function identifyFromText() {
     const textContent = document.body.innerText;
-    const response = await fetch('http://127.0.0.1:8000/assist/text', {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'X-Requested-With'
-    },
-      body: JSON.stringify({ "text": textContent })
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      alert(`Error: ${errorData.message}`);
-      return;
-    }
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'http://127.0.0.1:8000/assist/text');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+    xhr.setRequestHeader('Access-Control-Allow-Headers', 'X-Requested-With');
 
-    const data = await response.json();
-    alert(JSON.stringify(data));
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            alert(xhr.responseText);
+        } else {
+            const errorData = JSON.parse(xhr.responseText);
+            alert(`Error: ${errorData.message}`);
+        }
+    };
+
+    xhr.onerror = function() {
+        alert('Request failed');
+    };
+
+    xhr.send(JSON.stringify({ text: textContent }));
 }

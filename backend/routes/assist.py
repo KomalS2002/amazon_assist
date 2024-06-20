@@ -124,11 +124,11 @@ def extract_json(input_string):
 # def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
 
 @router.post("/text")
-def textToDesc(request: dict):
+def textToDesc(request: textDescModel):
     
-    if request["text"]:
+    if request.text:
         ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
-        prompt = request["text"] + ntpi
+        prompt = request.text + ntpi
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
