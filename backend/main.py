@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from routes import assist
-from routes.user import router
+from routes import user
+from routes import history
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 # app = FastAPI(title="AmazonAsist")
@@ -21,7 +22,8 @@ middleware = [
 ]
 app = FastAPI(middleware=middleware)
 app.include_router(assist.router, prefix="/assist")
-app.include_router(router)
+app.include_router(user.router)
+app.include_router(history.router)
 
 @app.get("/")
 def server_started():

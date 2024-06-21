@@ -25,6 +25,7 @@ import boto3
 import tempfile
 import moviepy.editor as mp
 import speech_recognition as sr
+from models.history import Historys
 
 router = APIRouter()
 load_dotenv()
@@ -43,9 +44,9 @@ clientimage = Client(provider=GeminiPro, api_key=gemini_api_key)
 
 # Prompts
 set_lang_english = "Reply only in English; "
-text_prompt_instructions = "; identify the products described here and generate keywords related to the product which will help in searching the product on Amazon (return the result as JSON in the format product:{keywords}) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON"
-image_identify_prompt_instructions = "; identify the products present here and generate keywords related to the product which will help in searching the product on Amazon like build, color, style, design. DO NOT DESCRIBE THE IMAGE JUST WRITE THE KEYWORDS FOR THE DIFFERENT ITEMS PRESENT IN THE IMAGE (return the result as JSON in the format product:{keywords}) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
-image_identify_prompt_instructions2 = "; (return the result as JSON where the actual name of each item is the key and the keywords decribing its characteristics are the value) (discard any product for which proper keywords are not found) (if no products are found then return response as message:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
+# text_prompt_instructions = "; identify the products described here and generate keywords related to the product which will help in searching the product on Amazon (return the result as JSON in the format product:{keywords}) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON"
+# image_identify_prompt_instructions = "; identify the products present here and generate keywords related to the product which will help in searching the product on Amazon like build, color, style, design. DO NOT DESCRIBE THE IMAGE JUST WRITE THE KEYWORDS FOR THE DIFFERENT ITEMS PRESENT IN THE IMAGE (return the result as JSON in the format product:{keywords}) (if no products are found then return response as product:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
+# image_identify_prompt_instructions2 = "; (return the result as JSON where the actual name of each item is the key and the keywords decribing its characteristics are the value) (discard any product for which proper keywords are not found) (if no products are found then return response as message:{-1}) ONLY RETURN THE JSON DO NOT WRITE ANYTHING ELSE NOT A SINGLE WORD EXTRA JUST THE JSON ONLY WRITE KEYWORDS"
 
 
 
@@ -100,7 +101,9 @@ def convert_to_dict(json_data):
         dict_data.append({item_name: tags})
     return dict_data
 
+# def generate_images_from_json(json_data,db:Session,user):
 def generate_images_from_json(json_data):
+    db_history = Historys()
     new_json = {}
     for item in json_data:
         if item: 
@@ -121,6 +124,14 @@ def generate_images_from_json(json_data):
                         "tags": ', '.join(tags),
                         "image_link": image_link
                     }
+                    #saving to database
+                    # db_history.user_id = user.id
+                    # db_history.item_name = item
+                    # db_history.link = image_link
+                    # db.add(db_history)
+                    # db.commit()
+                    # db.refresh(db_history)
+                    # print("data saved to database")
 
                 except IOError:
                     print(f"Error: Could not generate image for {item}")
@@ -144,11 +155,11 @@ def extract_json(input_string):
 
 # 
 #after testing comment out below line
-# def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
 
 @router.post("/text")
+# def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
 def textToDesc(request: textDescModel):
-    
+    print(request.text)
     if request.text:
         ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
         prompt = request.text + ntpi
@@ -160,8 +171,10 @@ def textToDesc(request: textDescModel):
         if response.choices[0].message.content:
             response_json = response.choices[0].message.content
             print(response_json)
+            print("###########################################3")
             response_json = extract_json(response_json)
             if response_json:
+                # newjson = generate_images_from_json(response_json,db,user)
                 newjson = generate_images_from_json(response_json)
                 print(newjson)
                 return newjson  # Using the default Status code i.e. Status 200
@@ -213,13 +226,13 @@ def upload_image(file: UploadFile = File(...)):
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
         )
-        print("################################################################################################################")
 
         if response1.choices[0].message.content:
             response_json = response1.choices[0].message.content
             print(response_json)
             response_json = extract_json(response_json)
             if response_json:
+                # newjson = generate_images_from_json(response_json,db,user)
                 new_json = generate_images_from_json(response_json)
                 return new_json  # Using the default Status code i.e. Status 200
             else:
@@ -260,7 +273,9 @@ def transcribe_video(video_path):
             return f"Could not request results from Google Speech Recognition service; {e}"
         
 
+ 
 @router.post("/video")
+# def process_video(file: UploadFile = File(...),db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
 def process_video(file: UploadFile = File(...)):
     try:
         # Save the uploaded video file temporarily
@@ -283,6 +298,7 @@ def process_video(file: UploadFile = File(...)):
             print(response_json)
             response_json = extract_json(response_json)
             if response_json:
+                # newjson = generate_images_from_json(response_json,db,user)
                 newjson = generate_images_from_json(response_json)
                 print(newjson)
                 return newjson  # Using the default Status code i.e. Status 200

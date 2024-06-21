@@ -23,6 +23,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 
 from models.user import Users
+from models.history import Historys
 target_metadata = [Base.metadata]
 
 # other values from the config, defined by the needs of env.py,
