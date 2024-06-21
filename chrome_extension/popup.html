@@ -1,16 +1,19 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>YouTube Product Identifier</title>
-    <style>
-      body { font-family: Arial, sans-serif; }
-      button { padding: 10px 20px; margin: 5px; }
-    </style>
-  </head>
-  <body>
-    <h1>YouTube Product Identifier</h1>
-    <div id="message"></div>
-    <button id="identifyText">Identify from Text</button>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popup</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <button id="identifyText">Identify Text</button>
+    <div id="resultsPopup" class="hidden">
+        <div class="popup">
+            <button class="close">X</button>
+            <div id="resultsWrap"></div>
+        </div>
+    </div>
     <script src="popup.js"></script>
-  </body>
+</body>
 </html>
