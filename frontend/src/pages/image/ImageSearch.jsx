@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './ImageSearch.css';
 import SearchIcon from '@mui/icons-material/Search';
 import ResultCard from '../../components/resultcard/Resultcard';
 import Loader from '../../components/loader/Loader';
+import './ImageSearch.css';
 
 const ImageSearch = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -26,7 +26,7 @@ const ImageSearch = () => {
     formData.append('file', selectedImage);
 
     try {
-      setLoading(true); // Set loading to true while waiting for response
+      setLoading(true);
       const response = await axios.post('http://127.0.0.1:8000/assist/image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -36,16 +36,17 @@ const ImageSearch = () => {
       const products = response.data;
       const itemsArray = Object.keys(products).map((key) => ({
         name: key,
-        tags: products[key].tags,
+        tags: products[key].tags.split(', '), // Split tags into an array
         image_link: products[key].image_link,
       }));
+
       setDetectedItems(itemsArray);
+      setLoading(false);
       setError(null);
     } catch (error) {
       console.error('Error posting image:', error);
+      setLoading(false);
       setError('Error posting image');
-    } finally {
-      setLoading(false); // Set loading back to false after response is received
     }
   };
 
@@ -70,7 +71,7 @@ const ImageSearch = () => {
           </form>
           {selectedImage && (
             <div className='imagePreview'>
-              <strong>Selected Image:</strong>
+              {/* <strong>Selected Image:</strong> */}
               <img
                 className='image'
                 src={URL.createObjectURL(selectedImage)}
@@ -87,7 +88,7 @@ const ImageSearch = () => {
         <div className='result'>
           <div className='holder'>Detected Items</div>
           <div className='resultsWrap'>
-            {loading ? ( // Render loader if loading is true
+            {loading ? (
               <Loader />
             ) : (
               detectedItems.length > 0 ? (

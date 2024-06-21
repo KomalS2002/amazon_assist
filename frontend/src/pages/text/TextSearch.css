@@ -42,3 +42,34 @@
     justify-content: center;
     flex-direction: column;
   }
+  .descr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  /* Responsive styling */
+  @media (max-width: 768px) {
+    .wrapper {
+      padding: 10px;
+    }
+  
+    .upload,
+    .formArea,
+    .descr {
+      max-width: 100%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .formArea {
+      width: 100%;
+    }
+  
+    .descr {
+      max-width: 100%;
+    }
+  }

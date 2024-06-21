@@ -1,3 +1,4 @@
+// src/pages/TextSearch/TextSearch.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
@@ -28,22 +29,24 @@ const TextSearch = () => {
       });
       console.log('Server response:', response.data);
 
+      // Assuming response.data is in the format { "Modern lamps": { "tags": "...", "image_link": "..." }, ... }
       const products = response.data;
       const itemsArray = Object.keys(products).map((key) => ({
         name: key,
-        tags: products[key].tags,
+        tags: products[key].tags.split(', '), 
         image_link: products[key].image_link,
       }));
+
       setDetectedItems(itemsArray);
-      setLoading(false); // Set loading to false after response is received
+      setLoading(false);
       setError(null);
     } catch (error) {
       console.error('Error posting text:', error);
       if (error.response) {
-        console.error('Response error data:', error.response.data);
+        console.error('Response error data:', error.response.data); 
       }
+      setLoading(false);
       setError('Error posting text');
-      setLoading(false); // Set loading to false in case of error
     }
   };
 
@@ -56,7 +59,7 @@ const TextSearch = () => {
       </div>
       <div className='wrapper'>
         <div className='upload'>
-          <div className='holder'>Upload Text</div>
+          <div className='holder'>Uploaded Text</div>
           <form className='formArea' onSubmit={handleSubmit}>
             <textarea
               className='textInput'
@@ -82,7 +85,7 @@ const TextSearch = () => {
         <div className='result'>
           <div className='holder'>Detected Items</div>
           <div className='resultsWrap'>
-            {loading ? ( // Render loader if loading is true
+            {loading ? (
               <Loader />
             ) : (
               detectedItems.length > 0 ? (

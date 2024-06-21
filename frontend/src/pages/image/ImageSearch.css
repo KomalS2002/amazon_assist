@@ -89,11 +89,53 @@
     color: black;
     border: 2px solid #f3830c;
     border-radius: 4px;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
     padding: 10px; 
     cursor: pointer; 
   }
   .fileInput:hover {
     background-color: #f3830c;
     color: white;
+  }
+
+  .imagePreview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0px;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  /* Styling for the image itself */
+  .imagePreview .image {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #f3830c;
+    border-radius: 8px;
+  }
+  
+  /* Responsive styling */
+  @media (max-width: 768px) {
+    .wrapper {
+      padding: 10px;
+    }
+  
+    .upload {
+      max-width: 100%;
+    }
+  
+    .imagePreview {
+      max-width: 100%;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .imagePreview {
+      max-width: 100%;
+    }
+  
+    .formArea {
+      width: 100%;
+    }
   }
