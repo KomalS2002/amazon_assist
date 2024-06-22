@@ -1,4 +1,5 @@
 import './App.css';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import SignUp from './pages/login/Signup';
 import Home from './pages/home/Home';
@@ -6,34 +7,25 @@ import ImageSearch from './pages/image/ImageSearch';
 import VideoSearch from './pages/video/VideoSearch';
 import TextSearch from './pages/text/TextSearch';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
 
 const App = () => {
   const { user } = useAuth();
 
   return (
     <div className="App">
-      {/* <AuthProvider>
+      <AuthProvider>
         <Router>
           <Routes>
-            <Route path="/" element={user ? <Navigate to="/home" /> : <SignUp />} />
-            <Route path="/home" element={user ? <Home /> : <Navigate to="/" />} />
-            <Route path="/home/image" element={user ? <ImageSearch /> : <Navigate to="/" />} />
-            <Route path="/home/video" element={user ? <VideoSearch /> : <Navigate to="/" />} />
-            <Route path="/home/text" element={user ? <TextSearch /> : <Navigate to="/" />} />
+            <Route path="/" element={<SignUp />} />
+            <Route path="/" element={<SignUp />} />
+            <Route path="/home" element={<PrivateRoute element={<Home />} />} />
+            <Route path="/home/image" element={<PrivateRoute element={<ImageSearch />} />} />
+            <Route path="/home/video" element={<PrivateRoute element={<VideoSearch />} />} />
+            <Route path="/home/text" element={<PrivateRoute element={<TextSearch />} />} />
           </Routes>
         </Router>
-      </AuthProvider> */}
-       <Router>
-     <Routes>
-        <Route exact path="/" element={SignUp} />
-        <Route index element={<SignUp />} />
-        <Route path = "home" element = {<Home />}/>
-        <Route path = "home/image" element = {<ImageSearch />}/>
-        <Route path = "home/video" element = {<VideoSearch />}/>
-        <Route path = "home/text" element = {<TextSearch />}/>
-      </Routes>
-
-</Router>
+      </AuthProvider>
     </div>
   );
 };

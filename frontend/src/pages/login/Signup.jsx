@@ -1,25 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
 import './SignUp.css';
 
-const SignUp=()=>{
+const SignUp = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+
   const onSuccess = (credentialResponse) => {
     const idToken = credentialResponse.credential;
     console.log('Google ID Token:', idToken);
-    
+
     const payload = {
       email: 'string',
       password: 'string',
       idToken: idToken,
       name: 'string'
     };
-    console.log(payload);
+
     // Send the payload to the backend
     axios.post('http://127.0.0.1:8000/auth', payload)
       .then((res) => {
@@ -39,7 +39,6 @@ const SignUp=()=>{
       });
   };
 
-
   return (
     <div className='signup-container'>
       <div className='google-login-button'>
@@ -51,7 +50,7 @@ const SignUp=()=>{
         />
       </div>
     </div>
-  )
+  );
 }
 
 export default SignUp;
