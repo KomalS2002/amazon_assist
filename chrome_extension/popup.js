@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         .resultCard .btn {
                             margin-left: auto;
                             padding: 5px 10px;
-                            background: #007BFF;
+                            background: #f3830c;
                             color: white;
                             border: none;
                             cursor: pointer;
