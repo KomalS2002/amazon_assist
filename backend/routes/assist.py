@@ -27,6 +27,9 @@ import moviepy.editor as mp
 import speech_recognition as sr
 from models.history import Historys
 
+import youtube_dl
+import yt_dlp
+
 router = APIRouter()
 load_dotenv()
 
@@ -52,6 +55,7 @@ set_lang_english = "Reply only in English; "
 
 HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 headers = {"Authorization": f"Bearer {huggingface_api_key}"}
+HUGGINGFACE_SPEECH_TO_TEXT_API_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
 
 
 
@@ -311,3 +315,69 @@ def process_video(file: UploadFile = File(...)):
         msg = [{"message": "Incorrect data/missing data"}]
         return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
     
+
+def download_audio(url: str, output_path: str) -> str:
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': output_path,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'flac',
+            'preferredquality': '192',
+        }],
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    # Return the correct output filename
+    return f"{output_path}.flac"
+
+def ytquery(filename: str):
+    with open(filename, "rb") as f:
+        data = f.read()
+    response = requests.post(HUGGINGFACE_SPEECH_TO_TEXT_API_URL, headers=headers, data=data)
+    return response.json()
+
+@router.post("/youtube-video")
+def youtube_video(request: dict):
+    if 'url' not in request:
+        raise HTTPException(status_code=400, detail="URL is missing in the request")
+
+    video_url = request['url']
+    output_filename = "downloaded_audio.flac"
+
+    try:
+        final_output_filename = download_audio(video_url, output_filename)
+        result = ytquery(final_output_filename)
+        os.remove(final_output_filename)  # Clean up the downloaded file
+        return result
+    except Exception as e:
+        # Log the exception
+        print(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+    #         ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
+    #         prompt = result + ntpi
+    #         response = client.chat.completions.create(
+    #         model="gpt-3.5-turbo",
+    #         messages=[{"role": "user", "content": prompt}],
+    #         )
+    #         if response.choices[0].message.content:
+    #             response_json = response.choices[0].message.content
+    #             print(response_json)
+    #             response_json = extract_json(response_json)
+    #             if response_json:
+    #                 newjson = generate_images_from_json(response_json)
+    #                 print(newjson)
+    #                 return newjson  # Using the default Status code i.e. Status 200
+    #             else:
+    #                 msg = [{"message": "Incorrect data/missing data"}]
+    #                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
+    #         else:
+    #             return f"Error: {response.status_code}, {response.text}"
+    #     except Exception as e:
+    #         raise HTTPException(status_code=500, detail=str(e))
+    # else:
+    #     msg = [{"message": "Incorrect data/missing data"}]
+    #     return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
