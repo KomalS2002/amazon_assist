@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             function updateAmazonUrl(name, tags) {
                 const baseUrl = 'https://www.amazon.in/s?k=';
-                const query = `${name} ${tags}`.split(' ').join('+');
+                const query = `${name} ${tags}`.split(' ').join(' ');
                 return `${baseUrl}${encodeURIComponent(query)}`;
             }
 

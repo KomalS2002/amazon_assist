@@ -60,7 +60,7 @@ HUGGINGFACE_SPEECH_TO_TEXT_API_URL = "https://api-inference.huggingface.co/model
 
 
 
-def query(payload, max_retries=3, retry_delay=100):
+def query(payload, max_retries=10, retry_delay=30):
     retries = 0
     while retries < max_retries:
         response = requests.post(HUGGINGFACE_API_URL, headers=headers, json=payload)

@@ -53,13 +53,13 @@ const ImageSearch = () => {
   return (
     <div>
       <div className='header'>
-        <img className='logo' src="/logo.svg" alt="logo" />
+        <a href='/home'><img className='logo' src="/logo.svg" alt="logo" /></a>
         <h3>Image Search</h3>
         <SearchIcon style={{ fontSize: '38px' }} />
       </div>
       <div className='wrapper'>
         <div className='upload'>
-          <div className='holder'>Upload Image</div>
+          <div className='holder'>Uploaded Image</div>
           <form className='formArea' onSubmit={handleSubmit}>
             <input
               type='file'

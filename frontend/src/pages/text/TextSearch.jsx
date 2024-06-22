@@ -53,7 +53,7 @@ const TextSearch = () => {
   return (
     <div>
       <div className='header'>
-        <img className='logo' src='/logo.svg' alt='logo' />
+      <a href='/home'><img className='logo' src="/logo.svg" alt="logo" /></a>
         <h3>Text Search</h3>
         <SearchIcon style={{ fontSize: '38px' }} />
       </div>
