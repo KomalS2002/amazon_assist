@@ -152,9 +152,7 @@ function createResultCard(name, tags, imageUrl) {
   icon.setAttribute('height', '24');
   icon.innerHTML = '<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-2v-2h-4v2H8v-2.5h8V16zm0-4.5H8V9h8v2.5z"/>';
   link.appendChild(icon);
-
   card.appendChild(link);
-
   return card;
 }
 

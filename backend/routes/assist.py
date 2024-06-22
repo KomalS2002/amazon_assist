@@ -26,8 +26,7 @@ import tempfile
 import moviepy.editor as mp
 import speech_recognition as sr
 from models.history import Historys
-
-import youtube_dl
+from pydub import AudioSegment
 import yt_dlp
 
 router = APIRouter()
@@ -54,7 +53,9 @@ set_lang_english = "Reply only in English; "
 
 
 HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-headers = {"Authorization": f"Bearer {huggingface_api_key}"}
+headers = {"Authorization": f"Bearer {huggingface_api_key}",
+           "language":'en',
+        }
 HUGGINGFACE_SPEECH_TO_TEXT_API_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
 
 
@@ -286,7 +287,6 @@ def process_video(file: UploadFile = File(...)):
         video_path = os.path.join(temp_dir, file.filename)
         with open(video_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-
         # Transcribe the video
         transcription = transcribe_video(video_path)
         print(transcription)
@@ -296,7 +296,6 @@ def process_video(file: UploadFile = File(...)):
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": prompt}],
         )
-
         if response.choices[0].message.content:
             response_json = response.choices[0].message.content
             print(response_json)
@@ -315,29 +314,76 @@ def process_video(file: UploadFile = File(...)):
         msg = [{"message": "Incorrect data/missing data"}]
         return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
     
-
+    
 def download_audio(url: str, output_path: str) -> str:
     ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': output_path,
+        'outtmpl': output_path + '.%(ext)s',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'flac',
+            'preferredcodec': 'm4a',
             'preferredquality': '192',
         }],
     }
-
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
+    return f"{output_path}.m4a"
 
-    # Return the correct output filename
-    return f"{output_path}.flac"
 
 def ytquery(filename: str):
-    with open(filename, "rb") as f:
-        data = f.read()
-    response = requests.post(HUGGINGFACE_SPEECH_TO_TEXT_API_URL, headers=headers, data=data)
-    return response.json()
+    max_retries = 5
+    retry_count = 0
+    retry_delay = 100  # seconds
+    while retry_count < max_retries:
+        with open(filename, "rb") as f:
+            data = f.read()
+        response = requests.post(HUGGINGFACE_SPEECH_TO_TEXT_API_URL, headers=headers, data=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            response_data = response.json()
+            if "error" in response_data:
+                if "currently loading" in response_data["error"]:
+                    estimated_time = response_data.get("estimated_time", retry_delay)
+                    print(f"Model is loading. Retrying in {estimated_time} seconds...")
+                    time.sleep(estimated_time)
+                    retry_count += 1
+                else:
+                    print(f"Error from API: {response_data['error']}")
+                    raise HTTPException(status_code=400, detail=response_data['error'])
+            else:
+                response.raise_for_status()
+    raise Exception("Failed to get a response after multiple retries.")
+
+
+def split_audio_to_chunks(audio, chunk_length_ms: int = 30000):
+    duration_ms = len(audio)
+    chunks = []
+    for start in range(0, duration_ms, chunk_length_ms):
+        end = min(start + chunk_length_ms, duration_ms)
+        chunk = audio[start:end]
+        chunks.append(chunk)
+    return chunks
+
+
+def export_audio_chunk_to_wav(chunk, filename: str):
+    # Export the chunk to WAV format
+    chunk.export(filename, format="wav")
+    return filename
+
+
+def process_audio_chunks(filename: str, chunk_length_ms: int = 30000):
+    audio = AudioSegment.from_file(filename)
+    chunks = split_audio_to_chunks(audio, chunk_length_ms)
+    results = []
+    for i, chunk in enumerate(chunks):
+        chunk_filename = f"{filename}_{i}.wav"
+        wav_chunk_filename = export_audio_chunk_to_wav(chunk, chunk_filename)
+        result = ytquery(wav_chunk_filename)
+        results.append(result)
+        os.remove(wav_chunk_filename)  # Clean up chunk file
+    return results
+
 
 @router.post("/youtube-video")
 def youtube_video(request: dict):
@@ -345,39 +391,33 @@ def youtube_video(request: dict):
         raise HTTPException(status_code=400, detail="URL is missing in the request")
 
     video_url = request['url']
-    output_filename = "downloaded_audio.flac"
+    output_filename = "downloaded_audio"
 
     try:
         final_output_filename = download_audio(video_url, output_filename)
-        result = ytquery(final_output_filename)
+        results = process_audio_chunks(final_output_filename)
         os.remove(final_output_filename)  # Clean up the downloaded file
-        return result
+        combined_result = "\n".join([result["text"] for result in results])
+        ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
+        prompt = combined_result+ ntpi
+        response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        )
+        if response.choices[0].message.content:
+            response_json = response.choices[0].message.content
+            print(response_json)
+            response_json = extract_json(response_json)
+            if response_json:
+                newjson = generate_images_from_json(response_json)
+                print(newjson)
+                return newjson  # Using the default Status code i.e. Status 200
+            else:
+                msg = [{"message": "Incorrect data/missing data"}]
+                return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
+        else:
+            return f"Error: {response.status_code}, {response.text}"
+        
     except Exception as e:
-        # Log the exception
         print(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-
-    #         ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
-    #         prompt = result + ntpi
-    #         response = client.chat.completions.create(
-    #         model="gpt-3.5-turbo",
-    #         messages=[{"role": "user", "content": prompt}],
-    #         )
-    #         if response.choices[0].message.content:
-    #             response_json = response.choices[0].message.content
-    #             print(response_json)
-    #             response_json = extract_json(response_json)
-    #             if response_json:
-    #                 newjson = generate_images_from_json(response_json)
-    #                 print(newjson)
-    #                 return newjson  # Using the default Status code i.e. Status 200
-    #             else:
-    #                 msg = [{"message": "Incorrect data/missing data"}]
-    #                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
-    #         else:
-    #             return f"Error: {response.status_code}, {response.text}"
-    #     except Exception as e:
-    #         raise HTTPException(status_code=500, detail=str(e))
-    # else:
-    #     msg = [{"message": "Incorrect data/missing data"}]
-    #     return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_404_NOT_FOUND)
