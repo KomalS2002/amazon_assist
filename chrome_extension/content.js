@@ -1,57 +1,95 @@
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "check_youtube") {
-      if (window.location.host.includes("youtube.com")) {
-          const video = document.querySelector('video');
-          if (video) {
-              alert("Please pause the video where you want products to be recognized.");
-              video.addEventListener('pause', () => {
-                  const button = document.createElement('button');
-                  button.innerText = "Identify Product";
-                  button.style.position = "fixed";
-                  button.style.top = "10px";
-                  button.style.right = "10px";
-                  button.style.zIndex = 1000;
-                  document.body.appendChild(button);
+    if (window.location.host.includes("youtube.com")) {
+      const video = document.querySelector('video');
+      if (video) {
+        const videoUrl = window.location.href;
+        alert(videoUrl);
+        video.addEventListener('pause', async () => {
+          
+          console.log("Video URL:", videoUrl);  // Debugging line
 
-                  button.addEventListener('click', async () => {
-                      const isWidescreen = document.querySelector('.html5-video-player').classList.contains('ytp-fullscreen');
-                      const screenshot = await captureScreenshot();
-                      const response = await fetch('http://127.0.0.1:8000/assist/image/', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ image: screenshot })
-                      });
-                      const data = await response.json();
-                      showResultsPopup(data);
-                      button.remove();
-                  });
+          // Function to send video URL to the backend
+          async function sendVideoUrl(url, endpoint) {
+            const payload = { text: url }; // Payload for /assist/text endpoint
+            try {
+              const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
               });
-          } else {
-              alert("Please play a video on YouTube to identify products in the video.");
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+              }
+              return await response.json();
+            } catch (error) {
+              console.error(`Error sending video URL to ${endpoint}:`, error);
+              return null;
+            }
           }
+
+          const data = await sendVideoUrl(videoUrl, '/assist/text');
+          if (data) {
+            showResultsPopup(data);
+          }
+
+          const button = document.createElement('button');
+          button.innerText = "Identify Product";
+          button.style.position = "fixed";
+          button.style.top = "10px";
+          button.style.right = "10px";
+          button.style.zIndex = 1000;
+          document.body.appendChild(button);
+
+          button.addEventListener('click', async () => {
+            const screenshot = await captureScreenshot();
+            try {
+              const response = await fetch('http://127.0.0.1:8000/assist/image/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: screenshot })
+              });
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+              }
+              const data = await response.json();
+              showResultsPopup(data);
+              button.remove();
+            } catch (error) {
+              console.error("Error sending screenshot:", error);
+            }
+          });
+        }, { once: true });
       } else {
-          alert("Please play a video on YouTube to identify products in the video.");
+        alert("Please play a video on YouTube to identify products in the video.");
       }
+    } else {
+      alert("Please play a video on YouTube to identify products in the video.");
+    }
   }
 });
 
 async function captureScreenshot() {
   return new Promise((resolve, reject) => {
-      chrome.tabs.captureVisibleTab(null, {}, (dataUrl) => {
-          resolve(dataUrl);
-      });
+    chrome.tabs.captureVisibleTab(null, {}, (dataUrl) => {
+      if (dataUrl) {
+        resolve(dataUrl);
+      } else {
+        reject("Failed to capture screenshot");
+      }
+    });
   });
 }
 
 function showResultsPopup(response) {
   // Create popup structure
   const popupHtml = `
-      <div id="resultsPopup" class="hidden">
-          <div class="popup">
-              <button class="close">X</button>
-              <div id="resultsWrap"></div>
-          </div>
+    <div id="resultsPopup" class="hidden">
+      <div class="popup">
+        <button class="close">X</button>
+        <div id="resultsWrap"></div>
       </div>
+    </div>
   `;
 
   // Inject HTML structure
@@ -60,27 +98,27 @@ function showResultsPopup(response) {
   // Create and show result cards
   const resultsWrap = document.getElementById('resultsWrap');
   if (resultsWrap) {
-      resultsWrap.innerHTML = '';
+    resultsWrap.innerHTML = '';
 
-      Object.keys(response).forEach(key => {
-          const item = response[key];
-          const card = createResultCard(key, item.tags, item.image_link);
-          resultsWrap.appendChild(card);
-      });
+    Object.keys(response).forEach(key => {
+      const item = response[key];
+      const card = createResultCard(key, item.tags, item.image_link);
+      resultsWrap.appendChild(card);
+    });
 
-      const popup = document.getElementById('resultsPopup');
-      if (popup) {
-          popup.classList.remove('hidden');
-      }
+    const popup = document.getElementById('resultsPopup');
+    if (popup) {
+      popup.classList.remove('hidden');
+    }
 
-      const closeBtn = document.querySelector('.popup .close');
-      if (closeBtn) {
-          closeBtn.onclick = () => {
-              popup.classList.add('hidden');
-          };
-      }
+    const closeBtn = document.querySelector('.popup .close');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        popup.classList.add('hidden');
+      };
+    }
   } else {
-      console.error('Element with id "resultsWrap" not found');
+    console.error('Element with id "resultsWrap" not found');
   }
 }
 
