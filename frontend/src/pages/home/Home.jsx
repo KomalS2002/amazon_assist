@@ -2,6 +2,7 @@ import React from 'react';
 import ImageSearchIcon from '@mui/icons-material/ImageSearch';
 import DescriptionIcon from '@mui/icons-material/Description';
 import VideoSettingsIcon from '@mui/icons-material/VideoSettings';
+import Gallery from '../../components/gallery/Gallery';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
@@ -50,11 +51,7 @@ const Home = () => {
         <div className='history'>
         <h2 style={{ textAlign: 'left' }}>Previously detected item</h2>
           <div className='itemCards'>
-            <div className='item'><VideoSettingsIcon/></div>
-            <div className='item'><VideoSettingsIcon/></div>
-            <div className='item'><VideoSettingsIcon/></div>
-            <div className='item'><VideoSettingsIcon/></div>
-            <div className='item'><VideoSettingsIcon/></div>
+            <Gallery/>
           </div>
         </div>
       </div>

@@ -106,8 +106,8 @@ def convert_to_dict(json_data):
         dict_data.append({item_name: tags})
     return dict_data
 
-# def generate_images_from_json(json_data,db:Session,user):
-def generate_images_from_json(json_data):
+def generate_images_from_json(json_data,db:Session):
+# def generate_images_from_json(json_data):
     db_history = Historys()
     new_json = {}
     for item in json_data:
@@ -129,14 +129,14 @@ def generate_images_from_json(json_data):
                         "tags": ', '.join(tags),
                         "image_link": image_link
                     }
-                    #saving to database
-                    # db_history.user_id = user.id
-                    # db_history.item_name = item
-                    # db_history.link = image_link
-                    # db.add(db_history)
-                    # db.commit()
-                    # db.refresh(db_history)
-                    # print("data saved to database")
+                    # saving to database
+                    db_history.user_id = "86ae4637-3806-4420-b13e-c8286dbb81ab"
+                    db_history.item_name = item
+                    db_history.link = image_link
+                    db.add(db_history)
+                    db.commit()
+                    db.refresh(db_history)
+                    print("data saved to database")
 
                 except IOError:
                     print(f"Error: Could not generate image for {item}")
@@ -162,8 +162,8 @@ def extract_json(input_string):
 #after testing comment out below line
 
 @router.post("/text")
-# def textToDesc(request: textDescModel,db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
-def textToDesc(request: textDescModel):
+def textToDesc(request: textDescModel,db: Session = Depends(get_db)):
+# def textToDesc(request: textDescModel):
     print(request.text)
     if request.text:
         ntpi= '; extract keywords related to each object described here and list them like this: {"Product name 1": ["feature 1","Feature 2","feature 3"],"Product name 2": ["feature 1","Feature 2","feature 3"],"Product name 3": ["feature 1","Feature 2","feature 3"],}'
@@ -179,8 +179,8 @@ def textToDesc(request: textDescModel):
             print("###########################################3")
             response_json = extract_json(response_json)
             if response_json:
-                # newjson = generate_images_from_json(response_json,db,user)
-                newjson = generate_images_from_json(response_json)
+                newjson = generate_images_from_json(response_json,db)
+                # newjson = generate_images_from_json(response_json)
                 print(newjson)
                 return newjson  # Using the default Status code i.e. Status 200
             else:
@@ -199,7 +199,7 @@ def textToDesc(request: textDescModel):
 #after testing comment out below line
 # def upload_image(file: UploadFile = File(...),db: Session = Depends(get_db),user: Users = Depends(JWTBearer())): 
 @router.post("/image")
-def upload_image(file: UploadFile = File(...)):
+def upload_image(file: UploadFile = File(...),db: Session = Depends(get_db)):
     try:
         # Save the uploaded file locally
         upload_folder = Path("uploaded_images")
@@ -237,9 +237,9 @@ def upload_image(file: UploadFile = File(...)):
             print(response_json)
             response_json = extract_json(response_json)
             if response_json:
-                # newjson = generate_images_from_json(response_json,db,user)
-                new_json = generate_images_from_json(response_json)
-                return new_json  # Using the default Status code i.e. Status 200
+                newjson = generate_images_from_json(response_json,db)
+                # new_json = generate_images_from_json(response_json)
+                return newjson  # Using the default Status code i.e. Status 200
             else:
                 msg = [{"message": "Incorrect data/missing data"}]
                 return JSONResponse(content=jsonable_encoder(msg), status_code=status.HTTP_400_BAD_REQUEST)
@@ -281,7 +281,7 @@ def transcribe_video(video_path):
  
 @router.post("/video")
 # def process_video(file: UploadFile = File(...),db: Session = Depends(get_db),user: Users = Depends(JWTBearer())):
-def process_video(file: UploadFile = File(...)):
+def process_video(file: UploadFile = File(...),db: Session = Depends(get_db)):
     try:
         # Save the uploaded video file temporarily
         video_path = os.path.join(temp_dir, file.filename)
@@ -301,8 +301,8 @@ def process_video(file: UploadFile = File(...)):
             print(response_json)
             response_json = extract_json(response_json)
             if response_json:
-                # newjson = generate_images_from_json(response_json,db,user)
-                newjson = generate_images_from_json(response_json)
+                newjson = generate_images_from_json(response_json,db)
+                # newjson = generate_images_from_json(response_json)
                 print(newjson)
                 return newjson  # Using the default Status code i.e. Status 200
             else:
@@ -386,7 +386,7 @@ def process_audio_chunks(filename: str, chunk_length_ms: int = 30000):
 
 
 @router.post("/youtube-video")
-def youtube_video(request: dict):
+def youtube_video(request: dict,db: Session = Depends(get_db)):
     if 'url' not in request:
         raise HTTPException(status_code=400, detail="URL is missing in the request")
 
@@ -409,7 +409,7 @@ def youtube_video(request: dict):
             print(response_json)
             response_json = extract_json(response_json)
             if response_json:
-                newjson = generate_images_from_json(response_json)
+                newjson = generate_images_from_json(response_json,db)
                 print(newjson)
                 return newjson  # Using the default Status code i.e. Status 200
             else:

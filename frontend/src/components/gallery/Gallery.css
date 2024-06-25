@@ -1,0 +1,31 @@
+.image-gallery {
+    padding: 20px;
+  }
+  
+  .error-message {
+    color: red;
+    margin-bottom: 20px;
+  }
+  
+  .image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .image-item {
+    display: flex;
+    flex-direction: row;
+    gap: 60px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .image-item img {
+    height: 300px;
+    width: 250px;
+    border-radius: 8px;
+    box-shadow: rgb(250, 136, 5) 0px 5px 15px;
+  }
+  

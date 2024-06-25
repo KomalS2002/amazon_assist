@@ -12,6 +12,6 @@ router = APIRouter(prefix="/history")
 
 
 @router.get("/all")
-async def history(db:Session = Depends(get_db),user: Users = Depends(JWTBearer())):
-    return fetchHistory(db,user)
+async def history(db:Session = Depends(get_db)):
+    return fetchHistory(db)
 

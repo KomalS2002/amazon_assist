@@ -9,7 +9,7 @@ const SignUp = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const onSuccess = (credentialResponse) => {
+  const onSuccess = async (credentialResponse) => {
     const idToken = credentialResponse.credential;
     console.log('Google ID Token:', idToken);
 
@@ -20,23 +20,33 @@ const SignUp = () => {
       name: 'string'
     };
 
-    // Send the payload to the backend
-    axios.post('http://127.0.0.1:8000/auth', payload)
-      .then((res) => {
-        console.log('Backend response:', res.data);
-        login(res.data);
-        navigate('/home');
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.error('Response error:', error.response.data);
-        } else if (error.request) {
-          console.error('Request error:', error.request);
-        } else {
-          console.error('Error', error.message);
-        }
-        console.error('Error config:', error.config);
-      });
+    try {
+      const response = await axios.post('http://127.0.0.1:8000/auth', payload);
+      console.log('Backend response:', response.data);
+
+      // Assuming response.data contains the JWT token
+      const token = response.data.token;
+      localStorage.setItem('token', token);
+
+      // Use the login context function to update authentication state
+      login(response.data);
+
+      // Navigate to the home page
+      navigate('/home');
+    } catch (error) {
+      if (error.response) {
+        console.error('Response error:', error.response.data);
+      } else if (error.request) {
+        console.error('Request error:', error.request);
+      } else {
+        console.error('Error', error.message);
+      }
+      console.error('Error config:', error.config);
+    }
+  };
+
+  const onFailure = () => {
+    console.log('Login Failed');
   };
 
   return (
@@ -44,9 +54,7 @@ const SignUp = () => {
       <div className='google-login-button'>
         <GoogleLogin
           onSuccess={onSuccess}
-          onError={() => {
-            console.log('Login Failed');
-          }}
+          onError={onFailure}
         />
       </div>
     </div>
